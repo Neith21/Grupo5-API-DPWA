@@ -1,12 +1,13 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 using PuellaWalletData.Data;
+using PuellaWalletData.Models;
 using PuellaWalletData.Repositories.Wallets;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
 namespace PuellaWalletAPI.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/Wallets")]
     [ApiController]
     public class WalletController : ControllerBase
     {
@@ -28,27 +29,52 @@ namespace PuellaWalletAPI.Controllers
 
         // GET api/<WalletController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public async Task<IActionResult> Get(int id)
         {
-            return "value";
+            var wallet = await _walletRepository.GetWalletByIdAsync(id);
+            if (wallet == null)
+            {
+                return NotFound();
+            }
+            return Ok(wallet);
         }
 
         // POST api/<WalletController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        public async Task<IActionResult> Post([FromBody] WalletModel wallet)
         {
+            await _walletRepository.AddWalletAsync(wallet);
+            return Created();
         }
 
         // PUT api/<WalletController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public async Task<IActionResult> Put(int id, [FromBody] WalletModel wallet)
         {
+            if (id != wallet.IdWallet)
+            {
+                return BadRequest("ID mismatch");
+            }
+
+            var walletEditable = await _walletRepository.GetWalletByIdAsync(id);
+            if (walletEditable == null)
+            {
+                return NotFound();
+            }
+
+            await _walletRepository.EditWalletAsync(wallet);
+
+            // Recuperar el recurso actualizado
+            var updatedWallet = await _walletRepository.GetWalletByIdAsync(id);
+            return Ok(updatedWallet);
         }
 
         // DELETE api/<WalletController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public async Task<IActionResult> edit(int id)
         {
+            await _walletRepository.DeleteWalletAsync(id);
+            return Ok();
         }
     }
 }

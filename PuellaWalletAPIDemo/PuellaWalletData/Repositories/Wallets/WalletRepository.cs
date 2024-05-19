@@ -19,16 +19,24 @@ namespace PuellaWalletData.Repositories.Wallets
 
         public async Task<IEnumerable<WalletModel>> GetAllWalletsAsync()
         {
-            return await _dataAccess.GetDataAsync<WalletModel, dynamic>(
+            var wallets = await _dataAccess.GetDataForeignAsync<WalletModel, UserModel, dynamic>(
             "dbo.spWallet_GetAll",
-            new { }
-            );
+            new { },
+            (wallet, user) =>
+            {
+                wallet.User = user;
+                return wallet;
+            },
+            splitOn: "IdUser"
+        );
+
+            return wallets;
         }
 
         public async Task<WalletModel?> GetWalletByIdAsync(int id)
         {
             var wallets = await _dataAccess.GetDataAsync<WalletModel, dynamic>(
-                "dbo.spWallets_GetById",
+                "dbo.spWallet_GetById",
                 new { IdWallet = id }
             );
 
@@ -38,35 +46,25 @@ namespace PuellaWalletData.Repositories.Wallets
         public async Task AddWalletAsync(WalletModel wallet)
         {
             await _dataAccess.SaveDataAsync(
-                "dbo.spWallets_Insert",
-                new { wallet.WalletUSD, wallet.WalletBTC, wallet.IdUser }
+                "dbo.spWallet_Insert",
+                new { wallet.WalletUSD, wallet.IdUser }
             );
         }
 
         public async Task EditWalletAsync(WalletModel wallet)
         {
             await _dataAccess.SaveDataAsync(
-                "dbo.spWallets_Update",
-                new { wallet.IdWallet, wallet.WalletUSD, wallet.WalletBTC, wallet.IdUser }
+                "dbo.spWallet_Update",
+                new { wallet.IdWallet, wallet.WalletUSD, wallet.IdUser }
             );
         }
 
         public async Task DeleteWalletAsync(int id)
         {
             await _dataAccess.SaveDataAsync(
-                "dbo.spWallets_Delete",
+                "dbo.spWallet_Delete",
                 new { IdWallet = id }
             );
-        }
-
-        private async Task<UserModel?> GetUserByIdAsync(int id)
-        {
-            var users = await _dataAccess.GetDataAsync<UserModel, dynamic>(
-                "dbo.spUsers_GetById",
-                new { IdUser = id }
-            );
-
-            return users.FirstOrDefault();
         }
     }
 }

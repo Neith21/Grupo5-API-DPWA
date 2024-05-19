@@ -25,6 +25,6 @@ namespace PuellaWalletData.Models
         [Display(Name = "ID de Usuario")]
         public int IdUser { get; set; }
 
-        public UserModel User { get; set; }
+        public UserModel? User { get; set; }
     }
 }
