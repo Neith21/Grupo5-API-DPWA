@@ -69,29 +69,32 @@ GO
 INSERT INTO tbl_Wallet(WalletUSD, IdUser) VALUES(5000, 1);
 GO
 
-CREATE OR ALTER PROC dbo.spWallet_Insert --INSERT
-(@WalletUSD MONEY, @IdUser INT)
+CREATE OR ALTER PROCEDURE dbo.spWallet_Insert
+    @WalletUSD MONEY,
+    @IdUser INT
 AS
 BEGIN
-	--Suponiendo que 1 BTC = 65000 USD
-	INSERT INTO tbl_Wallet VALUES (@WalletUSD, (@WalletUSD/65000), @IdUser)
+    -- Suponiendo que 1 BTC = 65000 USD
+    INSERT INTO tbl_Wallet (WalletUSD, WalletBTC, IdUser)
+    VALUES (@WalletUSD, (@WalletUSD / 65000), @IdUser);
 END
 GO
 
-CREATE OR ALTER PROC dbo.spWallet_Update --Update
-(@IdWallet INT, @WalletUSD MONEY, @IdUser INT)
+EXEC dbo.spWallet_Insert @WalletUSD = 500, @IdUser = 1;
+GO
+
+CREATE OR ALTER PROCEDURE dbo.spWallet_Update
+    @IdWallet INT,
+    @WalletUSD MONEY,
+    @IdUser INT
 AS
 BEGIN
-	DECLARE @WalletBTC FLOAT
-	--Actualizando USD
-	UPDATE tbl_Wallet SET WalletUSD = @WalletUSD
-	WHERE IdWallet = @IdWallet 
-
-	SELECT @WalletBTC = (WalletUSD/65000) FROM tbl_Wallet WHERE IdWallet = @IdWallet
-	
-	--Actualizando BTC
-	UPDATE tbl_Wallet SET WalletBTC = @WalletBTC
-	WHERE IdWallet = @IdWallet 
+    -- Actualizar USD y BTC en una sola operación
+    UPDATE tbl_Wallet
+    SET WalletUSD = @WalletUSD,
+        WalletBTC = @WalletUSD / 65000,
+        IdUser = @IdUser
+    WHERE IdWallet = @IdWallet;
 END
 GO
 
@@ -106,8 +109,10 @@ GO
 CREATE OR ALTER PROC dbo.spWallet_GetAll --GetAll
 AS
 BEGIN
-	SELECT IdWallet, U.userName, WalletUSD, WalletBTC  FROM tbl_Wallet W
-	INNER JOIN tbl_User U on W.IdUser = U.IdUser
+    SELECT w.IdWallet, w.WalletUSD, w.WalletBTC, w.IdUser, 
+           u.IdUser, u.UserName, u.UserAge, u.UserEMail
+    FROM tbl_Wallet w
+    INNER JOIN tbl_User u ON w.IdUser = u.IdUser;
 END
 GO
 
