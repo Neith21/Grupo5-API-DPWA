@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using PuellaWalletData.Data;
 using PuellaWalletData.Models;
 using PuellaWalletData.Repositories.Wallets;
@@ -12,18 +14,20 @@ namespace PuellaWalletAPI.Controllers
     public class WalletController : ControllerBase
     {
         private readonly IWalletRepository _walletRepository;
+        private readonly IValidator<WalletModel> _validator;
 
-        public WalletController(IWalletRepository walletRepository)
+        public WalletController(IWalletRepository walletRepository, IValidator<WalletModel> validator)
         {
             _walletRepository = walletRepository;
+            _validator = validator;
         }
+
 
         // GET: api/<WalletController>
         [HttpGet]
         public async Task<IActionResult> Get()
         {
             var wallets = await _walletRepository.GetAllWalletsAsync();
-
             return Ok(wallets);
         }
 
@@ -43,6 +47,10 @@ namespace PuellaWalletAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] WalletModel wallet)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(wallet);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
+
             await _walletRepository.AddWalletAsync(wallet);
             return Created();
         }
@@ -51,6 +59,10 @@ namespace PuellaWalletAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] WalletModel wallet)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(wallet);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
+
             if (id != wallet.IdWallet)
             {
                 return BadRequest("ID mismatch");
@@ -63,8 +75,6 @@ namespace PuellaWalletAPI.Controllers
             }
 
             await _walletRepository.EditWalletAsync(wallet);
-
-            // Recuperar el recurso actualizado
             var updatedWallet = await _walletRepository.GetWalletByIdAsync(id);
             return Ok(updatedWallet);
         }

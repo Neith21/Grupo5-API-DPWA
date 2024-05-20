@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using PuellaWalletData.Models;
 using PuellaWalletData.Repositories.Transactions;
 
@@ -11,11 +13,14 @@ namespace PuellaWalletAPI.Controllers
     public class TransactionController : ControllerBase
     {
         private readonly ITransactionRepository _transactionRepository;
+        private readonly IValidator<TransactionModel> _validator;
 
-        public TransactionController(ITransactionRepository transactionRepository)
+        public TransactionController(ITransactionRepository transactionRepository, IValidator<TransactionModel> validator)
         {
             _transactionRepository = transactionRepository;
+            _validator = validator;
         }
+
 
         // GET: api/<TransactionController>
         [HttpGet]
@@ -42,6 +47,10 @@ namespace PuellaWalletAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] TransactionModel transaction)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(transaction);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
+
             await _transactionRepository.AddTransactionAsync(transaction);
             return Created();
         }
@@ -50,6 +59,10 @@ namespace PuellaWalletAPI.Controllers
         [HttpPut("{id}")]
         public async Task<IActionResult> Put(int id, [FromBody] TransactionModel transaction)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(transaction);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
+
             if (id != transaction.IdTransaction)
             {
                 return BadRequest("ID mismatch");
@@ -63,7 +76,6 @@ namespace PuellaWalletAPI.Controllers
 
             await _transactionRepository.EditTransactionAsync(transaction);
 
-            // Recuperar el recurso actualizado
             var updatedTransaction = await _transactionRepository.GetTransactionByIdAsync(id);
             return Ok(updatedTransaction);
         }

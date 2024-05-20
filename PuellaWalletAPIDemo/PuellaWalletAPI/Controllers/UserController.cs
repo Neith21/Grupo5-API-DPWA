@@ -1,4 +1,6 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using FluentValidation;
+using FluentValidation.Results;
+using Microsoft.AspNetCore.Mvc;
 using PuellaWalletData.Models;
 using PuellaWalletData.Repositories.Users;
 
@@ -11,11 +13,14 @@ namespace PuellaWalletAPI.Controllers
     public class UserController : ControllerBase
     {
         private readonly IUserRepository _userRepository;
+        private readonly IValidator<UserModel> _validator;
 
-        public UserController(IUserRepository userRepository)
+        public UserController(IUserRepository userRepository, IValidator<UserModel> validator)
         {
             _userRepository = userRepository;
+            _validator = validator;
         }
+
 
         // GET: api/<UserController>
         [HttpGet]
@@ -36,6 +41,9 @@ namespace PuellaWalletAPI.Controllers
         [HttpPost]
         public async Task<IActionResult> Post([FromBody] UserModel user)
         {
+            ValidationResult validationResult = await _validator.ValidateAsync(user);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
             await _userRepository.AddUserAsync(user);
             return Created();
         }
@@ -49,6 +57,11 @@ namespace PuellaWalletAPI.Controllers
             {
                 return NotFound();
             }
+
+            ValidationResult validationResult = await _validator.ValidateAsync(user);
+            if (!validationResult.IsValid)
+                return UnprocessableEntity(validationResult);
+
             await _userRepository.EditUserAsync(user);
             return Accepted();
         }
